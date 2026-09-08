@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+
+# WARNING: Remove all existing UFW rules.
+ufw --force reset
+
+# Default policy
+ufw default deny incoming
+ufw default allow outgoing
+
+# Allow SSH through private Tailscale.
+ufw allow in on tailscale0 to any port 22 proto tcp \
+    comment 'SSH through Tailscale'
+
+# Allow SSH from the home LAN through Wi-Fi.
+ufw allow in on wlan0 from 192.168.178.0/24 to any port 22 proto tcp \
+    comment 'SSH from home LAN'
+
+# HTTP
+ufw allow in on tailscale0 to any port 80 proto tcp \
+    comment 'HTTP through Tailscale'
+
+ufw allow in on wlan0 from 192.168.178.0/24 to any port 80 proto tcp \
+    comment 'HTTP from home LAN'
+
+# Enable the firewall.
+ufw --force enable
+
+ufw status verbose
