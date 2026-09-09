@@ -5,6 +5,35 @@ import pytest
 from app.config import ConfigError, Settings
 
 
+def test_settings_load_local_dotenv_without_overriding_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    local_env = tmp_path / ".env"
+    local_env.write_text(
+        "\n".join(
+            (
+                "PUBLIC_ORIGIN=https://file.example.ts.net",
+                "ADMIN_HOSTS=door.local,192.168.178.20",
+                "LAN_CIDR=10.0.0.0/24",
+                f"DATA_DIR={tmp_path}",
+            )
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("app.config.LOCAL_ENV_FILE", local_env)
+    for name in ("PUBLIC_ORIGIN", "ADMIN_HOSTS", "LAN_CIDR", "DATA_DIR"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("PUBLIC_ORIGIN", "https://environment.example.ts.net")
+
+    settings = Settings.from_env()
+
+    assert settings.public_origin == "https://environment.example.ts.net"
+    assert settings.admin_hosts == ("door.local", "192.168.178.20")
+    assert str(settings.lan_network) == "10.0.0.0/24"
+    assert settings.data_dir == tmp_path
+
+
 def test_settings_derive_rp_id_and_defaults(tmp_path: Path) -> None:
     settings = Settings.from_env(
         {

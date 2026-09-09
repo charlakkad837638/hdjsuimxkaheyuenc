@@ -7,6 +7,11 @@ from pathlib import Path
 from typing import Mapping
 from urllib.parse import urlsplit
 
+from dotenv import load_dotenv
+
+
+LOCAL_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+
 
 class ConfigError(ValueError):
     """Raised when required application configuration is invalid."""
@@ -26,7 +31,11 @@ class Settings:
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] | None = None) -> "Settings":
-        values = os.environ if environ is None else environ
+        if environ is None:
+            load_dotenv(LOCAL_ENV_FILE, override=False)
+            values = os.environ
+        else:
+            values = environ
 
         public_origin = values.get("PUBLIC_ORIGIN", "").strip()
         if not public_origin:
