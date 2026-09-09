@@ -1,0 +1,85 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  background: Canvas;
+  color: CanvasText;
+}
+
+.page {
+  width: min(42rem, calc(100% - 2rem));
+  margin: 3rem auto;
+}
+
+.card {
+  padding: 1.5rem;
+  border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+  border-radius: 0.75rem;
+}
+
+form,
+.card {
+  display: grid;
+  gap: 1rem;
+}
+
+button,
+input {
+  box-sizing: border-box;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.8rem;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.danger {
+  color: #b00020;
+}
+
+.status {
+  min-height: 1.5rem;
+}
+
+.status.error {
+  color: #b00020;
+}
+
+.status.success {
+  color: #087830;
+}
+
+.qr-code {
+  width: min(18rem, 100%);
+  height: auto;
+  background: white;
+}
+
+.user-list {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.user-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.user-list small {
+  display: block;
+}

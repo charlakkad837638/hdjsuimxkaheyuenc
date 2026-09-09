@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Door administration{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1>Door administration</h1>
+
+  <h2>Invitation</h2>
+  {% if invitation %}
+    <p>
+      Expires at <time datetime="{{ invitation.expires_at }}">{{ invitation.expires_at }}</time>.
+      {% if invitation.claimed %}Registration is in progress.{% endif %}
+    </p>
+    <img class="qr-code" src="/admin/invitation.svg" alt="QR code for the active invitation">
+    <label for="invitation-url">Invitation URL</label>
+    <input id="invitation-url" type="text" value="{{ invitation.url }}" readonly>
+  {% else %}
+    <p>No invitation is active.</p>
+    <form action="/admin/invitations" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit">Create five-minute invitation</button>
+    </form>
+  {% endif %}
+
+  <h2>Registered users</h2>
+  {% if users %}
+    <ul class="user-list">
+      {% for user in users %}
+        <li>
+          <div>
+            <strong>{{ user.display_name }}</strong>
+            <small>Registered {{ user.created_at }}</small>
+          </div>
+          <form action="/admin/users/delete" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="user_id" value="{{ user.user_id }}">
+            <button class="danger" type="submit">Delete</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No users are registered.</p>
+  {% endif %}
+</section>
+{% endblock %}

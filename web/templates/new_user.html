@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Register a passkey{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1>Register a passkey</h1>
+  <p>Name this user, then create a passkey on this device.</p>
+  <form id="registration-form">
+    <label for="display-name">Display name</label>
+    <input
+      id="display-name"
+      name="display_name"
+      type="text"
+      minlength="1"
+      maxlength="64"
+      autocomplete="name"
+      required
+    >
+    <button type="submit">Create passkey</button>
+  </form>
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/webauthn.js" defer></script>
+<script src="/static/register.js" defer></script>
+{% endblock %}

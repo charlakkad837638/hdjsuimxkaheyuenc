@@ -1,0 +1,1 @@
+"""Door web application."""

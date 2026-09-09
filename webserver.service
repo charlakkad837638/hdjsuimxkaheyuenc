@@ -1,19 +1,29 @@
 [Unit]
 Description=web interface
-After=network.target
+Wants=network-online.target
+After=network-online.target tailscaled.service
 
 [Service]
 Type=simple
 User=door
 Group=door
 WorkingDirectory=/srv/door
-ExecStart=/usr/bin/python3 /srv/door/server.py
+EnvironmentFile=/etc/door.env
+ExecStart=/srv/door/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 80 --workers 1 --no-proxy-headers --no-access-log --log-level error
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=door
 
 Restart=on-failure
 RestartSec=5
 
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+StateDirectory=door
+StateDirectoryMode=0700
+UMask=0077
 
 NoNewPrivileges=true
 PrivateTmp=true
