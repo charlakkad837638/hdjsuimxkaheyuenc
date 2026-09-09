@@ -68,9 +68,11 @@ sudo chmod 750 /srv/door/server.py
 ```
 
 ## shut down the pi
+```
+sudo shutdown -h now
+```
 
 ## install for the first time
-
 ```
 cd ~/hdjsuimxkaheyuenc
 git pull --ff-only
