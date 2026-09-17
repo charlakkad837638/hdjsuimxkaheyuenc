@@ -67,6 +67,31 @@ sudo chown door:door /srv/door/server.py
 sudo chmod 750 /srv/door/server.py
 ```
 
+## door relay
+
+The Adafruit STEMMA non-latching relay uses connections separate from the OLED:
+
+- red/VCC: physical pin 17 (3.3V);
+- black/GND: physical pin 9;
+- white/signal: physical pin 11 (BCM GPIO17).
+
+After successful `/open` authentication, the webserver pulses active-high
+BCM GPIO17 for one second and always restores it LOW. BCM GPIO2 and GPIO3
+remain reserved for the OLED's I²C connection.
+
+Install the updated dependencies and unit when deploying:
+
+```sh
+sudo /srv/door/.venv/bin/pip install -r /srv/door/requirements.txt
+sudo install -o root -g root -m 0644 \
+  webserver.service /etc/systemd/system/webserver.service
+sudo systemctl daemon-reload
+sudo systemctl restart webserver.service
+```
+
+The webserver unit receives the `gpio` supplementary group and access only to
+`/dev/gpiochip0`. The OLED unit remains restricted to `/dev/i2c-1`.
+
 ## shut down the pi
 ```
 sudo shutdown -h now

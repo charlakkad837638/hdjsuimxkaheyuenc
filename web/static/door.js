@@ -35,10 +35,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(window.DoorWebAuthn.credentialToJSON(credential)),
       });
-      showStatus(
-        "Authentication succeeded. The door action is currently disabled.",
-        "success",
-      );
+      showStatus("Door opened.", "success");
     } catch (error) {
       if (error.name === "NotAllowedError" || error.name === "AbortError") {
         showStatus("Passkey authentication was canceled.", "error");

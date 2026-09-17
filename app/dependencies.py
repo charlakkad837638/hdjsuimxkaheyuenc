@@ -10,7 +10,7 @@ from app.errors import AppError
 from app.services.challenges import ChallengeStore
 from app.services.credentials import CredentialStore
 from app.services.csrf import CsrfManager
-from app.services.door_action import DoorAction, NoOpDoorAction
+from app.services.door_action import DoorAction, RelayDoorAction
 from app.services.invitations import InvitationManager
 from app.services.webauthn_service import WebAuthnService
 
@@ -25,6 +25,11 @@ class ServiceContainer:
     webauthn: WebAuthnService
     door_action: DoorAction
 
+    def close(self) -> None:
+        close = getattr(self.door_action, "close", None)
+        if close is not None:
+            close()
+
 
 def build_services(settings: Settings) -> ServiceContainer:
     return ServiceContainer(
@@ -37,7 +42,7 @@ def build_services(settings: Settings) -> ServiceContainer:
             rp_id=settings.rp_id,
             expected_origin=settings.public_origin,
         ),
-        door_action=NoOpDoorAction(),
+        door_action=RelayDoorAction(),
     )
 
 

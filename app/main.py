@@ -33,9 +33,13 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
+        service_container = services or build_services(resolved_settings)
         application.state.settings = resolved_settings
-        application.state.services = services or build_services(resolved_settings)
-        yield
+        application.state.services = service_container
+        try:
+            yield
+        finally:
+            service_container.close()
 
     application = FastAPI(
         title="Door",

@@ -7,8 +7,10 @@ After=network-online.target tailscaled.service
 Type=simple
 User=door
 Group=door
+SupplementaryGroups=gpio
 WorkingDirectory=/srv/door
 EnvironmentFile=/etc/door.env
+Environment=GPIOZERO_PIN_FACTORY=lgpio
 ExecStart=/srv/door/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 80 --workers 1 --no-proxy-headers --no-access-log --log-level error
 
 StandardOutput=journal
@@ -33,6 +35,9 @@ ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
 RestrictSUIDSGID=true
+
+DevicePolicy=closed
+DeviceAllow=/dev/gpiochip0 rw
 
 [Install]
 WantedBy=multi-user.target
