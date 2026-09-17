@@ -2,11 +2,14 @@
 set -eu
 
 PROJECT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-PYTHON="$PROJECT_DIR/.venv/bin/python"
 GPIO_DEVICE=/dev/gpiochip0
 
-if [ ! -x "$PYTHON" ]; then
-    echo "Missing virtual environment Python: $PYTHON" >&2
+if [ -x "$PROJECT_DIR/.venv/bin/python" ]; then
+    PYTHON="$PROJECT_DIR/.venv/bin/python"
+elif [ -x /srv/door/.venv/bin/python ]; then
+    PYTHON=/srv/door/.venv/bin/python
+else
+    echo "Missing Python virtual environment in $PROJECT_DIR/.venv or /srv/door/.venv." >&2
     exit 1
 fi
 
