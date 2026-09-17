@@ -120,6 +120,19 @@ sudo systemctl start webserver.service
 sudo systemctl status webserver.service
 ```
 
+## local webserver check
+
+Run this on the Raspberry Pi:
+
+```sh
+curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' \
+  -H 'Host: 192.168.178.33' \
+  http://127.0.0.1/door
+```
+
+The expected response is `HTTP 200`. An explicit allowed `Host` header is
+required because `localhost` is not listed in `ADMIN_HOSTS`.
+
 ## OLED system status display
 
 The SSD1306 display switches through three pages:
@@ -240,3 +253,12 @@ ps -p "$pid" -o pid,%cpu,rss,etime,cmd
 Expected Raspberry Pi 4B usage is below 2% of one CPU core and below 64 MiB
 RSS. Persistent repeated journal errors, higher steady-state use, or more than
 two normal display redraws per second should be investigated before deployment.
+
+
+# copy installed code
+
+`sudo rsync -a --delete \
+  --exclude .git \
+  --exclude .venv \
+  --exclude .env \
+  ./ /srv/door/`

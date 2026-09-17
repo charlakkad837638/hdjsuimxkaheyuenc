@@ -13,6 +13,13 @@ else
     exit 1
 fi
 
+if ! "$PYTHON" -c "import gpiozero, lgpio" >/dev/null 2>&1; then
+    echo "The selected virtual environment is missing gpiozero or lgpio." >&2
+    echo "Install them with:" >&2
+    echo "  sudo $PYTHON -m pip install -r $PROJECT_DIR/requirements.txt" >&2
+    exit 1
+fi
+
 if [ ! -r "$GPIO_DEVICE" ] || [ ! -w "$GPIO_DEVICE" ]; then
     echo "Cannot access $GPIO_DEVICE; run this script with sudo." >&2
     exit 1

@@ -8,10 +8,13 @@ Type=simple
 User=door
 Group=door
 SupplementaryGroups=gpio
-WorkingDirectory=/srv/door
+# lgpio creates its notification pipe in the current working directory.
+RuntimeDirectory=door
+RuntimeDirectoryMode=0700
+WorkingDirectory=/run/door
 EnvironmentFile=/etc/door.env
 Environment=GPIOZERO_PIN_FACTORY=lgpio
-ExecStart=/srv/door/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 80 --workers 1 --no-proxy-headers --no-access-log --log-level error
+ExecStart=/srv/door/.venv/bin/uvicorn --app-dir /srv/door app.main:app --host 0.0.0.0 --port 80 --workers 1 --no-proxy-headers --no-access-log --log-level error
 
 StandardOutput=journal
 StandardError=journal
