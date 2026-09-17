@@ -9,6 +9,7 @@ User=oled
 Group=oled
 SupplementaryGroups=i2c
 WorkingDirectory=/srv/door
+EnvironmentFile=-/etc/oled-display.env
 ExecStart=/srv/door/.venv/bin/python /srv/door/oled_status.py
 
 Restart=always
