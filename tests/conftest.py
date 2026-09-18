@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import os
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -10,8 +9,6 @@ from fastapi.testclient import TestClient
 
 os.environ.setdefault("PUBLIC_ORIGIN", "https://door.example.ts.net")
 os.environ.setdefault("ADMIN_HOSTS", "door.local")
-os.environ.setdefault("ADMIN_USERNAME", "admin")
-os.environ.setdefault("ADMIN_PASSWORD", "test-password")
 os.environ.setdefault("DATA_DIR", "/tmp/door-tests")
 
 from app.config import Settings
@@ -113,8 +110,6 @@ def settings(tmp_path: Path) -> Settings:
         {
             "PUBLIC_ORIGIN": "https://door.example.ts.net",
             "ADMIN_HOSTS": "door.local",
-            "ADMIN_USERNAME": "admin",
-            "ADMIN_PASSWORD": "test-password",
             "LAN_CIDR": "192.168.178.0/24",
             "DATA_DIR": str(tmp_path),
         }
@@ -151,11 +146,9 @@ def public_client(app):
 
 @pytest.fixture
 def lan_client(app):
-    encoded_credentials = base64.b64encode(b"admin:test-password").decode("ascii")
     with TestClient(
         app,
         base_url="http://door.local",
         client=("192.168.178.25", 50000),
-        headers={"Authorization": f"Basic {encoded_credentials}"},
     ) as client:
         yield client

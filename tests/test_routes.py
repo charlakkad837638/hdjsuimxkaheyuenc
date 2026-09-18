@@ -1,19 +1,12 @@
 from __future__ import annotations
 
-import base64
 import re
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.dependencies import ServiceContainer
 from app.services.credentials import CredentialRecord
 from app.services.door_action import NoOpDoorAction
-
-
-def basic_auth_header(username: str, password: str) -> str:
-    encoded = base64.b64encode(f"{username}:{password}".encode("ascii")).decode("ascii")
-    return f"Basic {encoded}"
 
 
 def csrf_from(html: str) -> str:
@@ -81,9 +74,7 @@ def test_untrusted_host_and_non_lan_admin_are_rejected(
     app,
     public_client: TestClient,
 ) -> None:
-    rejected = public_client.get("/admin", headers={"accept": "text/html"})
-    assert rejected.status_code == 404
-    assert "www-authenticate" not in rejected.headers
+    assert public_client.get("/admin").status_code == 404
     assert public_client.get("/door", headers={"host": "evil.example"}).status_code == 400
 
     with TestClient(
@@ -92,45 +83,6 @@ def test_untrusted_host_and_non_lan_admin_are_rejected(
         client=("100.64.0.12", 50000),
     ) as tailscale_client:
         assert tailscale_client.get("/admin").status_code == 404
-
-
-@pytest.mark.parametrize(
-    ("method", "path"),
-    [
-        ("GET", "/admin"),
-        ("POST", "/admin/invitations"),
-        ("GET", "/admin/invitation.svg"),
-        ("POST", "/admin/users/delete"),
-    ],
-)
-def test_admin_routes_require_basic_auth(app, method: str, path: str) -> None:
-    with TestClient(
-        app,
-        base_url="http://door.local",
-        client=("192.168.178.25", 50000),
-    ) as client:
-        response = client.request(method, path, headers={"accept": "text/html"})
-
-    assert response.status_code == 401
-    assert response.headers["www-authenticate"] == 'Basic realm="Door admin"'
-
-
-def test_admin_rejects_incorrect_basic_credentials(app) -> None:
-    with TestClient(
-        app,
-        base_url="http://door.local",
-        client=("192.168.178.25", 50000),
-    ) as client:
-        response = client.get(
-            "/admin",
-            headers={
-                "accept": "text/html",
-                "authorization": basic_auth_header("admin", "wrong-password"),
-            },
-        )
-
-    assert response.status_code == 401
-    assert response.headers["www-authenticate"] == 'Basic realm="Door admin"'
 
 
 def test_admin_creates_only_one_invitation_and_serves_qr(
