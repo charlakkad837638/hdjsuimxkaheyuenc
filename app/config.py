@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ipaddress
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Mapping
 from urllib.parse import urlsplit
@@ -23,6 +23,8 @@ class Settings:
     rp_id: str
     lan_network: ipaddress.IPv4Network | ipaddress.IPv6Network
     admin_hosts: tuple[str, ...]
+    admin_username: str
+    admin_password: str = field(repr=False)
     data_dir: Path
 
     @property
@@ -68,6 +70,18 @@ class Settings:
         ):
             raise ConfigError("ADMIN_HOSTS must be a comma-separated list of hostnames or IP addresses")
 
+        admin_username = values.get("ADMIN_USERNAME", "")
+        if not admin_username:
+            raise ConfigError("ADMIN_USERNAME is required")
+        if not admin_username.isascii() or ":" in admin_username:
+            raise ConfigError("ADMIN_USERNAME must be ASCII and cannot contain ':'")
+
+        admin_password = values.get("ADMIN_PASSWORD", "")
+        if not admin_password:
+            raise ConfigError("ADMIN_PASSWORD is required")
+        if not admin_password.isascii():
+            raise ConfigError("ADMIN_PASSWORD must be ASCII")
+
         lan_cidr = values.get("LAN_CIDR", "192.168.178.0/24").strip()
         try:
             lan_network = ipaddress.ip_network(lan_cidr, strict=False)
@@ -83,5 +97,7 @@ class Settings:
             rp_id=parsed.hostname.lower(),
             lan_network=lan_network,
             admin_hosts=admin_hosts,
+            admin_username=admin_username,
+            admin_password=admin_password,
             data_dir=data_dir,
         )

@@ -61,6 +61,21 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now webserver.service
 ```
 
+#### web configuration
+
+The web service reads its configuration from `/etc/door.env`. Copy
+`.env.example`, restrict it to root, and replace the example admin password:
+
+```sh
+sudo install -o root -g root -m 0600 .env.example /etc/door.env
+sudoedit /etc/door.env
+```
+
+`ADMIN_USERNAME` and `ADMIN_PASSWORD` protect every `/admin` endpoint with
+HTTP Basic authentication in addition to the existing LAN restriction. Basic
+authentication does not encrypt credentials; terminate TLS in front of the
+service before using the admin interface across an untrusted network.
+
 server file permissions / ownership setup:
 ```
 sudo chown door:door /srv/door/server.py

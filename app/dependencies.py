@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import ipaddress
+import secrets
 from dataclasses import dataclass
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from app.config import Settings
 from app.errors import AppError
@@ -13,6 +15,9 @@ from app.services.csrf import CsrfManager
 from app.services.door_action import DoorAction, RelayDoorAction
 from app.services.invitations import InvitationManager
 from app.services.webauthn_service import WebAuthnService
+
+
+_admin_basic = HTTPBasic(realm="Door admin")
 
 
 @dataclass
@@ -110,3 +115,25 @@ def require_lan_admin(
     if address.is_loopback or address not in settings.lan_network:
         raise AppError(404, "not_found", "Not found", html=True)
     return str(address)
+
+
+def require_admin(
+    peer_ip: str = Depends(require_lan_admin),
+    credentials: HTTPBasicCredentials = Depends(_admin_basic),
+    settings: Settings = Depends(get_settings),
+) -> str:
+    username_matches = secrets.compare_digest(
+        credentials.username,
+        settings.admin_username,
+    )
+    password_matches = secrets.compare_digest(
+        credentials.password,
+        settings.admin_password,
+    )
+    if not (username_matches and password_matches):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": 'Basic realm="Door admin"'},
+        )
+    return peer_ip

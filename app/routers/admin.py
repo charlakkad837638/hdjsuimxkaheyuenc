@@ -16,7 +16,7 @@ from app.dependencies import (
     get_csrf,
     get_invitations,
     get_settings,
-    require_lan_admin,
+    require_admin,
 )
 from app.errors import AppError
 from app.services.credentials import (
@@ -55,7 +55,7 @@ def _consume_csrf(csrf: CsrfManager, csrf_token: str, peer_ip: str) -> None:
 @router.get("/admin")
 def admin_page(
     request: Request,
-    peer_ip: str = Depends(require_lan_admin),
+    peer_ip: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
     credentials: CredentialStore = Depends(get_credentials),
     invitations: InvitationManager = Depends(get_invitations),
@@ -99,7 +99,7 @@ def admin_page(
 @router.post("/admin/invitations")
 def create_invitation(
     csrf_token: Annotated[str, Form()],
-    peer_ip: str = Depends(require_lan_admin),
+    peer_ip: str = Depends(require_admin),
     csrf: CsrfManager = Depends(get_csrf),
     invitations: InvitationManager = Depends(get_invitations),
 ):
@@ -118,7 +118,7 @@ def create_invitation(
 
 @router.get("/admin/invitation.svg")
 def invitation_qr(
-    _peer_ip: str = Depends(require_lan_admin),
+    _peer_ip: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
     invitations: InvitationManager = Depends(get_invitations),
 ):
@@ -138,7 +138,7 @@ def invitation_qr(
 def delete_user(
     csrf_token: Annotated[str, Form()],
     user_id: Annotated[str, Form()],
-    peer_ip: str = Depends(require_lan_admin),
+    peer_ip: str = Depends(require_admin),
     csrf: CsrfManager = Depends(get_csrf),
     credentials: CredentialStore = Depends(get_credentials),
 ):

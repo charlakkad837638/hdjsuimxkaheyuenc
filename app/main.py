@@ -106,6 +106,7 @@ def create_app(
                 name="error.html",
                 context={"title": message, "message": message},
                 status_code=exc.status_code,
+                headers=exc.headers,
             )
         code = "not_found" if exc.status_code == 404 else "http_error"
         return JSONResponse(
