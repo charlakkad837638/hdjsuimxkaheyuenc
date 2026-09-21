@@ -30,6 +30,7 @@ def test_pages_have_exact_headers_rows_and_order() -> None:
             cpu=known("18%"),
             memory=known("43%"),
             uptime=known("3d 6h"),
+            storage=known("12.3G used / 45.7G free"),
         ),
         ServiceSnapshot(
             state=known("active"),
@@ -51,7 +52,12 @@ def test_pages_have_exact_headers_rows_and_order() -> None:
         "Tunnel: connected",
         "Public: online",
     )
-    assert pages[1].rows == ("CPU: 18%", "Memory: 43%", "Uptime: 3d 6h")
+    assert pages[1].rows == (
+        "CPU: 18%",
+        "Memory: 43%",
+        "Uptime: 3d 6h",
+        "12.3G used / 45.7G free",
+    )
     assert pages[2].rows == (
         "State: active",
         "Process: running",
@@ -87,3 +93,12 @@ def test_renderer_truncates_long_rows_with_ascii_ellipsis() -> None:
 
     assert rendered.endswith("...")
     assert renderer._text_width(draw, rendered) <= 64
+
+
+def test_storage_row_fits_the_physical_display_width() -> None:
+    renderer = DisplayRenderer(width=128)
+    image = Image.new("1", (128, 64))
+    draw = ImageDraw.Draw(image)
+    row = "12.3G used / 45.7G free"
+
+    assert renderer._truncate(draw, row) == row

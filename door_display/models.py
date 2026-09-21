@@ -39,6 +39,7 @@ class SystemSnapshot:
     cpu: StatusValue
     memory: StatusValue
     uptime: StatusValue
+    storage: StatusValue
 
     @classmethod
     def initial(cls) -> SystemSnapshot:
@@ -47,6 +48,7 @@ class SystemSnapshot:
             cpu=StatusValue.measuring(),
             memory=not_collected,
             uptime=not_collected,
+            storage=not_collected,
         )
 
 

@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from door_display.models import MEASURING_TEXT, UNKNOWN_TEXT, ValueState
 from door_display.providers.system import (
+    GIBIBYTE,
     PROC_MEMINFO,
     PROC_STAT,
     PROC_UPTIME,
+    STORAGE_ROOT,
     SystemProvider,
 )
 
@@ -69,3 +73,63 @@ def test_cpu_counter_regression_is_unknown_then_recovers() -> None:
 
     reader.values[PROC_STAT] = "cpu 15 0 15 90 0 0 0 0\n"
     assert provider.read_cpu().text == "50%"
+
+
+def test_storage_formats_used_and_free_decimal_gibibytes() -> None:
+    paths: list[Path] = []
+
+    def read_disk_usage(path: Path) -> tuple[int, int, int]:
+        paths.append(path)
+        return (
+            64 * GIBIBYTE,
+            123 * GIBIBYTE // 10,
+            457 * GIBIBYTE // 10,
+        )
+
+    provider = SystemProvider(
+        reader=lambda _path: "",
+        disk_usage_reader=read_disk_usage,
+    )
+
+    assert provider.read_storage().text == "12.3G used / 45.7G free"
+    assert paths == [STORAGE_ROOT]
+
+
+@pytest.mark.parametrize(
+    "counters",
+    [
+        (0, 0, 0),
+        (100, 101, 0),
+        (100, 50, 51),
+        (100, True, 0),
+    ],
+)
+def test_invalid_storage_counters_are_unknown(
+    counters: tuple[int, int, int],
+) -> None:
+    provider = SystemProvider(
+        reader=lambda _path: "",
+        disk_usage_reader=lambda _path: counters,
+    )
+
+    value = provider.read_storage()
+
+    assert value.state is ValueState.UNKNOWN
+    assert value.text == UNKNOWN_TEXT
+    assert value.error
+
+
+def test_storage_reader_failure_is_unknown() -> None:
+    def failing_reader(_path: Path) -> tuple[int, int, int]:
+        raise OSError("storage unavailable")
+
+    provider = SystemProvider(
+        reader=lambda _path: "",
+        disk_usage_reader=failing_reader,
+    )
+
+    value = provider.read_storage()
+
+    assert value.state is ValueState.UNKNOWN
+    assert value.text == UNKNOWN_TEXT
+    assert "storage unavailable" in (value.error or "")

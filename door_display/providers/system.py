@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 import math
 from pathlib import Path
+from shutil import disk_usage
 
 from door_display.models import StatusValue, format_duration
 from door_display.providers.common import TextReader, read_text
@@ -10,11 +12,21 @@ from door_display.providers.common import TextReader, read_text
 PROC_STAT = Path("/proc/stat")
 PROC_MEMINFO = Path("/proc/meminfo")
 PROC_UPTIME = Path("/proc/uptime")
+STORAGE_ROOT = Path("/")
+GIBIBYTE = 1024**3
+
+DiskUsageReader = Callable[[Path], tuple[int, int, int]]
 
 
 class SystemProvider:
-    def __init__(self, *, reader: TextReader = read_text) -> None:
+    def __init__(
+        self,
+        *,
+        reader: TextReader = read_text,
+        disk_usage_reader: DiskUsageReader = disk_usage,
+    ) -> None:
         self.reader = reader
+        self.disk_usage_reader = disk_usage_reader
         self._previous_cpu: tuple[int, int] | None = None
 
     def read_cpu(self) -> StatusValue:
@@ -75,6 +87,31 @@ class SystemProvider:
             return StatusValue.known(format_duration(seconds))
         except Exception as exc:
             return StatusValue.unknown(self._reason("/proc/uptime", exc))
+
+    def read_storage(self) -> StatusValue:
+        try:
+            total, used, free = self.disk_usage_reader(STORAGE_ROOT)
+            counters = (total, used, free)
+            if any(
+                isinstance(value, bool) or not isinstance(value, int)
+                for value in counters
+            ):
+                raise ValueError("storage counters must be integers")
+            if (
+                total <= 0
+                or used < 0
+                or free < 0
+                or used > total
+                or free > total
+                or used + free > total
+            ):
+                raise ValueError("storage counters are internally inconsistent")
+            return StatusValue.known(
+                f"{used / GIBIBYTE:.1f}G used / "
+                f"{free / GIBIBYTE:.1f}G free"
+            )
+        except Exception as exc:
+            return StatusValue.unknown(self._reason("storage for /", exc))
 
     @staticmethod
     def _percent_value(percent: float, name: str) -> StatusValue:

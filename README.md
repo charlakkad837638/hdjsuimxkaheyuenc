@@ -151,6 +151,7 @@ Public: online
 CPU: 18%
 Memory: 43%
 Uptime: 3d 6h
+12.3G used / 45.7G free
 ```
 
 ```text
@@ -228,9 +229,11 @@ sudo systemctl restart oled_display.service
 
 CPU is sampled every 2 seconds, memory and uptime every 5 seconds, and local
 network, tunnel readiness, and webserver status every 10 seconds. Public HTTPS
-health is checked every 60 seconds. The eight-step countdown bar updates at
-most twice per second. The SSD1306 adapter transfers only changed pages and
-columns after the first frame, avoiding unnecessary full-frame I²C writes.
+health is checked every 60 seconds. Root-filesystem used and free storage are
+shown in decimal GiB and refreshed every 10 minutes. The eight-step countdown
+bar updates at most twice per second. The SSD1306 adapter transfers only
+changed pages and columns after the first frame, avoiding unnecessary
+full-frame I²C writes.
 
 The service logs startup, shutdown, state changes, unavailable values, and
 recoveries to journald. It does not log routine polling or redraws. Journald

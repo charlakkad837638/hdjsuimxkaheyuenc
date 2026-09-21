@@ -25,6 +25,7 @@ from door_display.renderer import COUNTDOWN_STEPS, DisplayRenderer
 
 CPU_REFRESH_SECONDS = 2.0
 SYSTEM_REFRESH_SECONDS = 5.0
+STORAGE_REFRESH_SECONDS = 600.0
 NETWORK_REFRESH_SECONDS = 10.0
 TUNNEL_REFRESH_SECONDS = 10.0
 PUBLIC_REFRESH_SECONDS = 60.0
@@ -38,6 +39,8 @@ class SystemStatusProvider(Protocol):
     def read_memory(self) -> StatusValue: ...
 
     def read_uptime(self) -> StatusValue: ...
+
+    def read_storage(self) -> StatusValue: ...
 
 
 class NetworkStatusProvider(Protocol):
@@ -107,6 +110,7 @@ class DisplayApplication:
         self.page_deadline = 0.0
         self.next_cpu_refresh = 0.0
         self.next_system_refresh = 0.0
+        self.next_storage_refresh = 0.0
         self.next_network_refresh = 0.0
         self.next_tunnel_refresh = 0.0
         self.next_public_refresh = 0.0
@@ -174,6 +178,20 @@ class DisplayApplication:
             self.next_system_refresh = self._next_deadline(
                 self.next_system_refresh,
                 SYSTEM_REFRESH_SECONDS,
+                now,
+                force=force,
+            )
+
+        if force or now >= self.next_storage_refresh:
+            storage = self._safe_value(
+                "Storage",
+                self.system_provider.read_storage,
+            )
+            self._observe("Storage", storage)
+            self.system = replace(self.system, storage=storage)
+            self.next_storage_refresh = self._next_deadline(
+                self.next_storage_refresh,
+                STORAGE_REFRESH_SECONDS,
                 now,
                 force=force,
             )

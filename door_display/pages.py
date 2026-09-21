@@ -29,6 +29,7 @@ def build_pages(
                 f"CPU: {system.cpu.text}",
                 f"Memory: {system.memory.text}",
                 f"Uptime: {system.uptime.text}",
+                system.storage.text,
             ),
         ),
         DisplayPage(

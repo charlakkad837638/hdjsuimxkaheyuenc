@@ -40,6 +40,7 @@ class FakeSystemProvider:
         self.cpu_calls = 0
         self.memory_calls = 0
         self.uptime_calls = 0
+        self.storage_calls = 0
 
     def read_cpu(self) -> StatusValue:
         self.cpu_calls += 1
@@ -52,6 +53,10 @@ class FakeSystemProvider:
     def read_uptime(self) -> StatusValue:
         self.uptime_calls += 1
         return StatusValue.known("1h 0m")
+
+    def read_storage(self) -> StatusValue:
+        self.storage_calls += 1
+        return StatusValue.known("12.3G used / 45.7G free")
 
 
 class FakeNetworkProvider:
@@ -177,6 +182,7 @@ def test_application_rotates_pages_and_suppresses_duplicate_redraws() -> None:
     assert system.cpu_calls == 5
     assert system.memory_calls == 3
     assert system.uptime_calls == 3
+    assert system.storage_calls == 1
     assert network.wifi_calls == 2
     assert network.lan_calls == 2
     assert cloudflare.tunnel_calls == 2
@@ -205,6 +211,20 @@ def test_public_health_refreshes_every_sixty_seconds() -> None:
     app.tick(60)
     assert cloudflare.tunnel_calls == 3
     assert cloudflare.public_calls == 2
+
+
+def test_storage_refreshes_every_ten_minutes() -> None:
+    app, _display, system, _network, _cloudflare, _service = make_application()
+
+    app.start(0)
+    app.tick(599.9)
+    assert system.storage_calls == 1
+
+    app.tick(600)
+    assert system.storage_calls == 2
+
+    app.tick(1200)
+    assert system.storage_calls == 3
 
 
 def test_unknown_failures_are_deduplicated_and_recovery_is_logged(
