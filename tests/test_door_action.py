@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from app.services.credentials import CredentialRecord
-from app.services.door_action import RelayDoorAction
+from app.services.door_action import RELAY_PULSE_SECONDS, RelayDoorAction
 
 
 class FakeRelayOutput:
@@ -34,7 +34,7 @@ def authenticated_user() -> CredentialRecord:
     )
 
 
-def test_relay_uses_bcm17_active_high_and_pulses_for_one_second() -> None:
+def test_relay_uses_bcm17_active_high_and_pulses_for_configured_duration() -> None:
     relay = FakeRelayOutput()
     construction: dict[str, Any] = {}
     sleeps: list[float] = []
@@ -51,7 +51,7 @@ def test_relay_uses_bcm17_active_high_and_pulses_for_one_second() -> None:
         "active_high": True,
         "initial_value": False,
     }
-    assert sleeps == [1.0]
+    assert sleeps == [RELAY_PULSE_SECONDS]
     assert relay.events == ["on", "off"]
 
     action.close()
@@ -66,7 +66,7 @@ def test_relay_is_restored_low_when_the_pulse_fails() -> None:
         return relay
 
     def failing_sleep(seconds: float) -> None:
-        assert seconds == 1.0
+        assert seconds == RELAY_PULSE_SECONDS
         raise RuntimeError("interrupted")
 
     action = RelayDoorAction(

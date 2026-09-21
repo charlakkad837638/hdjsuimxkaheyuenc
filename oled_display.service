@@ -1,6 +1,7 @@
 [Unit]
 Description=OLED status display
-After=systemd-modules-load.service
+Wants=network-online.target
+After=network-online.target systemd-modules-load.service
 StartLimitIntervalSec=0
 
 [Service]
@@ -25,8 +26,16 @@ ProtectSystem=strict
 ProtectHome=true
 ProtectKernelTunables=true
 ProtectKernelModules=true
+ProtectKernelLogs=true
 ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
 RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
 
 DevicePolicy=closed
 DeviceAllow=/dev/i2c-1 rw

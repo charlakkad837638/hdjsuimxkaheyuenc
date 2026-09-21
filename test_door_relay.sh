@@ -34,7 +34,7 @@ fi
 export GPIOZERO_PIN_FACTORY=lgpio
 cd "$PROJECT_DIR"
 
-echo "Pulsing the door relay on BCM GPIO17 for one second..."
+echo "Pulsing the door relay on BCM GPIO17 for the configured duration..."
 "$PYTHON" - <<'PY'
 from app.services.credentials import CredentialRecord
 from app.services.door_action import RelayDoorAction

@@ -54,8 +54,8 @@ class SystemSnapshot:
 class NetworkSnapshot:
     wifi: StatusValue
     lan: StatusValue
-    tailscale: StatusValue
-    tailscale_ip: StatusValue
+    tunnel: StatusValue
+    public: StatusValue
 
     @classmethod
     def initial(cls) -> NetworkSnapshot:
@@ -63,8 +63,8 @@ class NetworkSnapshot:
         return cls(
             wifi=not_collected,
             lan=not_collected,
-            tailscale=not_collected,
-            tailscale_ip=not_collected,
+            tunnel=not_collected,
+            public=not_collected,
         )
 
 

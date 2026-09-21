@@ -26,6 +26,8 @@ from door_display.renderer import COUNTDOWN_STEPS, DisplayRenderer
 CPU_REFRESH_SECONDS = 2.0
 SYSTEM_REFRESH_SECONDS = 5.0
 NETWORK_REFRESH_SECONDS = 10.0
+TUNNEL_REFRESH_SECONDS = 10.0
+PUBLIC_REFRESH_SECONDS = 60.0
 SERVICE_REFRESH_SECONDS = 10.0
 SCHEDULER_TICK_SECONDS = 0.5
 
@@ -43,7 +45,11 @@ class NetworkStatusProvider(Protocol):
 
     def read_lan(self) -> StatusValue: ...
 
-    def read_tailscale(self) -> tuple[StatusValue, StatusValue]: ...
+
+class CloudflareStatusProvider(Protocol):
+    def read_tunnel(self) -> StatusValue: ...
+
+    def read_public(self) -> StatusValue: ...
 
 
 class ServiceStatusProvider(Protocol):
@@ -76,6 +82,7 @@ class DisplayApplication:
         renderer: DisplayRenderer,
         system_provider: SystemStatusProvider,
         network_provider: NetworkStatusProvider,
+        cloudflare_provider: CloudflareStatusProvider,
         service_provider: ServiceStatusProvider,
         stop_event: StopEvent,
         clock: Callable[[], float] = time.monotonic,
@@ -86,6 +93,7 @@ class DisplayApplication:
         self.renderer = renderer
         self.system_provider = system_provider
         self.network_provider = network_provider
+        self.cloudflare_provider = cloudflare_provider
         self.service_provider = service_provider
         self.stop_event = stop_event
         self.clock = clock
@@ -100,6 +108,8 @@ class DisplayApplication:
         self.next_cpu_refresh = 0.0
         self.next_system_refresh = 0.0
         self.next_network_refresh = 0.0
+        self.next_tunnel_refresh = 0.0
+        self.next_public_refresh = 0.0
         self.next_service_refresh = 0.0
 
         self._started = False
@@ -171,32 +181,48 @@ class DisplayApplication:
         if force or now >= self.next_network_refresh:
             wifi = self._safe_value("WiFi", self.network_provider.read_wifi)
             lan = self._safe_value("LAN", self.network_provider.read_lan)
-            try:
-                tailscale, tailscale_ip = self.network_provider.read_tailscale()
-                if not isinstance(tailscale, StatusValue) or not isinstance(
-                    tailscale_ip, StatusValue
-                ):
-                    raise TypeError("provider returned invalid Tailscale values")
-            except Exception as exc:
-                reason = self._exception_reason(exc)
-                tailscale = StatusValue.unknown(reason)
-                tailscale_ip = StatusValue.unknown(reason)
 
             self._observe("WiFi", wifi)
             self._observe("LAN", lan)
-            self._observe("Tailscale", tailscale)
-            self._observe("Tailscale IP", tailscale_ip)
             self._observe_health("WiFi", self._wifi_health(wifi))
-            self._observe_health("Tailscale", self._known_text(tailscale))
-            self.network = NetworkSnapshot(
+            self.network = replace(
+                self.network,
                 wifi=wifi,
                 lan=lan,
-                tailscale=tailscale,
-                tailscale_ip=tailscale_ip,
             )
             self.next_network_refresh = self._next_deadline(
                 self.next_network_refresh,
                 NETWORK_REFRESH_SECONDS,
+                now,
+                force=force,
+            )
+
+        if force or now >= self.next_tunnel_refresh:
+            tunnel = self._safe_value(
+                "Cloudflare tunnel",
+                self.cloudflare_provider.read_tunnel,
+            )
+            self._observe("Cloudflare tunnel", tunnel)
+            self._observe_health("Cloudflare tunnel", self._known_text(tunnel))
+            self.network = replace(self.network, tunnel=tunnel)
+            self.next_tunnel_refresh = self._next_deadline(
+                self.next_tunnel_refresh,
+                TUNNEL_REFRESH_SECONDS,
+                now,
+                force=force,
+            )
+
+        if force or now >= self.next_public_refresh:
+            public = self._safe_value(
+                "Public endpoint",
+                self.cloudflare_provider.read_public,
+            )
+            self._observe("Public endpoint", public)
+            self._observe_health("Public endpoint", self._known_text(public))
+            self.network = replace(self.network, public=public)
+            self.next_public_refresh = self._next_deadline(
+                self.next_public_refresh,
+                PUBLIC_REFRESH_SECONDS,
                 now,
                 force=force,
             )
@@ -308,6 +334,7 @@ class DisplayApplication:
 
 
 def main() -> None:
+    from door_display.providers.cloudflare import CloudflareProvider
     from door_display.providers.network import NetworkProvider
     from door_display.providers.service import ServiceProvider
     from door_display.providers.system import SystemProvider
@@ -342,6 +369,10 @@ def main() -> None:
         renderer=DisplayRenderer(width=display.width, height=display.height),
         system_provider=SystemProvider(),
         network_provider=NetworkProvider(),
+        cloudflare_provider=CloudflareProvider(
+            ready_url=config.tunnel_ready_url,
+            public_url=config.public_health_url,
+        ),
         service_provider=ServiceProvider(),
         stop_event=stop_requested,
     )

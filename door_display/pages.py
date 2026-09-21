@@ -19,8 +19,8 @@ def build_pages(
             rows=(
                 f"WiFi: {network.wifi.text}",
                 f"LAN: {network.lan.text}",
-                f"Tailscale: {network.tailscale.text}",
-                f"TS IP: {network.tailscale_ip.text}",
+                f"Tunnel: {network.tunnel.text}",
+                f"Public: {network.public.text}",
             ),
         ),
         DisplayPage(

@@ -59,7 +59,6 @@ class FakeNetworkProvider:
         self.wifi_values = wifi_values or [StatusValue.known("connected")]
         self.wifi_calls = 0
         self.lan_calls = 0
-        self.tailscale_calls = 0
 
     def read_wifi(self) -> StatusValue:
         value = self.wifi_values[min(self.wifi_calls, len(self.wifi_values) - 1)]
@@ -70,9 +69,19 @@ class FakeNetworkProvider:
         self.lan_calls += 1
         return StatusValue.known("192.168.1.2")
 
-    def read_tailscale(self) -> tuple[StatusValue, StatusValue]:
-        self.tailscale_calls += 1
-        return StatusValue.known("connected"), StatusValue.known("100.64.1.2")
+
+class FakeCloudflareProvider:
+    def __init__(self) -> None:
+        self.tunnel_calls = 0
+        self.public_calls = 0
+
+    def read_tunnel(self) -> StatusValue:
+        self.tunnel_calls += 1
+        return StatusValue.known("connected")
+
+    def read_public(self) -> StatusValue:
+        self.public_calls += 1
+        return StatusValue.known("online")
 
 
 class FakeServiceProvider:
@@ -99,17 +108,20 @@ def make_application(
     display: FakeDisplay | None = None,
     renderer: FakeRenderer | None = None,
     network: FakeNetworkProvider | None = None,
+    cloudflare: FakeCloudflareProvider | None = None,
     logger: logging.Logger | None = None,
 ) -> tuple[
     DisplayApplication,
     FakeDisplay,
     FakeSystemProvider,
     FakeNetworkProvider,
+    FakeCloudflareProvider,
     FakeServiceProvider,
 ]:
     resolved_display = display or FakeDisplay()
     system = FakeSystemProvider()
     resolved_network = network or FakeNetworkProvider()
+    resolved_cloudflare = cloudflare or FakeCloudflareProvider()
     service = FakeServiceProvider()
     app = DisplayApplication(
         config=DisplayConfig(page_seconds=4),
@@ -117,11 +129,19 @@ def make_application(
         renderer=renderer or FakeRenderer(),  # type: ignore[arg-type]
         system_provider=system,
         network_provider=resolved_network,
+        cloudflare_provider=resolved_cloudflare,
         service_provider=service,
         stop_event=StopImmediately(),
         logger=logger,
     )
-    return app, resolved_display, system, resolved_network, service
+    return (
+        app,
+        resolved_display,
+        system,
+        resolved_network,
+        resolved_cloudflare,
+        service,
+    )
 
 
 def test_countdown_is_quantized_to_eight_levels() -> None:
@@ -133,7 +153,7 @@ def test_countdown_is_quantized_to_eight_levels() -> None:
 
 
 def test_application_rotates_pages_and_suppresses_duplicate_redraws() -> None:
-    app, display, system, network, service = make_application()
+    app, display, system, network, cloudflare, service = make_application()
 
     app.start(0)
     assert display.frames[-1][0].name == "NETWORK"
@@ -159,18 +179,32 @@ def test_application_rotates_pages_and_suppresses_duplicate_redraws() -> None:
     assert system.uptime_calls == 3
     assert network.wifi_calls == 2
     assert network.lan_calls == 2
-    assert network.tailscale_calls == 2
+    assert cloudflare.tunnel_calls == 2
+    assert cloudflare.public_calls == 1
     assert service.calls == 2
 
 
 def test_page_deadline_catches_up_without_drift() -> None:
-    app, _display, _system, _network, _service = make_application()
+    app, _display, _system, _network, _cloudflare, _service = make_application()
 
     app.start(0)
     app.tick(12.1)
 
     assert app.active_page_index == 0
     assert app.page_deadline == 16
+
+
+def test_public_health_refreshes_every_sixty_seconds() -> None:
+    app, _display, _system, _network, cloudflare, _service = make_application()
+
+    app.start(0)
+    app.tick(10)
+    assert cloudflare.tunnel_calls == 2
+    assert cloudflare.public_calls == 1
+
+    app.tick(60)
+    assert cloudflare.tunnel_calls == 3
+    assert cloudflare.public_calls == 2
 
 
 def test_unknown_failures_are_deduplicated_and_recovery_is_logged(
@@ -184,7 +218,7 @@ def test_unknown_failures_are_deduplicated_and_recovery_is_logged(
             StatusValue.known("down"),
         ]
     )
-    app, _display, _system, _network, _service = make_application(
+    app, _display, _system, _network, _cloudflare, _service = make_application(
         network=network,
         logger=logger,
     )
@@ -200,7 +234,7 @@ def test_unknown_failures_are_deduplicated_and_recovery_is_logged(
 
 
 def test_run_cleans_up_after_normal_stop() -> None:
-    app, display, _system, _network, _service = make_application()
+    app, display, _system, _network, _cloudflare, _service = make_application()
 
     app.run()
 
@@ -209,7 +243,7 @@ def test_run_cleans_up_after_normal_stop() -> None:
 
 def test_run_cleans_up_after_render_failure() -> None:
     display = FakeDisplay()
-    app, _display, _system, _network, _service = make_application(
+    app, _display, _system, _network, _cloudflare, _service = make_application(
         display=display,
         renderer=FakeRenderer(fail=True),
     )

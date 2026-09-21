@@ -7,7 +7,7 @@ from typing import Any, Mapping, Sequence
 import pytest
 from fastapi.testclient import TestClient
 
-os.environ.setdefault("PUBLIC_ORIGIN", "https://door.example.ts.net")
+os.environ.setdefault("PUBLIC_ORIGIN", "https://door.example.com")
 os.environ.setdefault("ADMIN_HOSTS", "door.local")
 os.environ.setdefault("DATA_DIR", "/tmp/door-tests")
 
@@ -36,7 +36,7 @@ class FakeWebAuthn:
         return (
             {
                 "challenge": "cmVnaXN0cmF0aW9u",
-                "rp": {"id": "door.example.ts.net", "name": "Door"},
+                "rp": {"id": "door.example.com", "name": "Door"},
                 "user": {
                     "id": "dXNlcg",
                     "name": "dXNlcg",
@@ -68,7 +68,7 @@ class FakeWebAuthn:
         return (
             {
                 "challenge": "YXV0aGVudGljYXRpb24",
-                "rpId": "door.example.ts.net",
+                "rpId": "door.example.com",
                 "allowCredentials": [],
                 "userVerification": "required",
             },
@@ -108,7 +108,7 @@ class SpyDoorAction:
 def settings(tmp_path: Path) -> Settings:
     return Settings.from_env(
         {
-            "PUBLIC_ORIGIN": "https://door.example.ts.net",
+            "PUBLIC_ORIGIN": "https://door.example.com",
             "ADMIN_HOSTS": "door.local",
             "LAN_CIDR": "192.168.178.0/24",
             "DATA_DIR": str(tmp_path),
@@ -138,7 +138,7 @@ def app(settings: Settings, services: ServiceContainer):
 def public_client(app):
     with TestClient(
         app,
-        base_url="https://door.example.ts.net",
+        base_url="https://door.example.com",
         client=("127.0.0.1", 50000),
     ) as client:
         yield client

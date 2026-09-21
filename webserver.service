@@ -1,7 +1,7 @@
 [Unit]
 Description=web interface
 Wants=network-online.target
-After=network-online.target tailscaled.service
+After=network-online.target
 
 [Service]
 Type=simple
@@ -36,8 +36,16 @@ ProtectSystem=strict
 ProtectHome=true
 ProtectKernelTunables=true
 ProtectKernelModules=true
+ProtectKernelLogs=true
 ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
 RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
 
 DevicePolicy=closed
 DeviceAllow=/dev/gpiochip0 rw

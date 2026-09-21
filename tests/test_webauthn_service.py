@@ -6,8 +6,8 @@ from app.services.webauthn_service import WebAuthnFailure, WebAuthnService
 
 def test_options_require_discoverable_user_verified_credentials() -> None:
     service = WebAuthnService(
-        rp_id="door.example.ts.net",
-        expected_origin="https://door.example.ts.net",
+        rp_id="door.example.com",
+        expected_origin="https://door.example.com",
     )
 
     registration, registration_challenge = service.registration_options(
@@ -29,8 +29,8 @@ def test_options_require_discoverable_user_verified_credentials() -> None:
 
 def test_authentication_rejects_wrong_discoverable_user_handle() -> None:
     service = WebAuthnService(
-        rp_id="door.example.ts.net",
-        expected_origin="https://door.example.ts.net",
+        rp_id="door.example.com",
+        expected_origin="https://door.example.com",
     )
     record = CredentialRecord(
         user_id=b"expected",

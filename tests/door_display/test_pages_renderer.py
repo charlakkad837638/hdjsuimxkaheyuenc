@@ -23,8 +23,8 @@ def test_pages_have_exact_headers_rows_and_order() -> None:
         NetworkSnapshot(
             wifi=known("-57 dBm"),
             lan=known("192.168.178.33"),
-            tailscale=known("connected"),
-            tailscale_ip=known("100.64.1.2"),
+            tunnel=known("connected"),
+            public=known("online"),
         ),
         SystemSnapshot(
             cpu=known("18%"),
@@ -48,8 +48,8 @@ def test_pages_have_exact_headers_rows_and_order() -> None:
     assert pages[0].rows == (
         "WiFi: -57 dBm",
         "LAN: 192.168.178.33",
-        "Tailscale: connected",
-        "TS IP: 100.64.1.2",
+        "Tunnel: connected",
+        "Public: online",
     )
     assert pages[1].rows == ("CPU: 18%", "Memory: 43%", "Uptime: 3d 6h")
     assert pages[2].rows == (

@@ -8,18 +8,11 @@ ufw --force reset
 ufw default deny incoming
 ufw default allow outgoing
 
-# Allow SSH through private Tailscale.
-ufw allow in on tailscale0 to any port 22 proto tcp \
-    comment 'SSH through Tailscale'
-
 # Allow SSH from the home LAN through Wi-Fi.
 ufw allow in on wlan0 from 192.168.178.0/24 to any port 22 proto tcp \
     comment 'SSH from home LAN'
 
-# HTTP
-ufw allow in on tailscale0 to any port 80 proto tcp \
-    comment 'HTTP through Tailscale'
-
+# Allow the local admin interface from the home LAN.
 ufw allow in on wlan0 from 192.168.178.0/24 to any port 80 proto tcp \
     comment 'HTTP from home LAN'
 

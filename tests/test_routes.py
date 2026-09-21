@@ -58,7 +58,7 @@ def test_public_pages_routes_and_security_headers(public_client: TestClient) -> 
 
     response = public_client.get("/door")
     assert response.status_code == 200
-    assert "Open door" in response.text
+    assert 'id="open-door"' in response.text
     assert response.headers["cache-control"] == "no-store"
     assert "default-src 'self'" in response.headers["content-security-policy"]
     assert response.headers["x-content-type-options"] == "nosniff"
@@ -75,14 +75,25 @@ def test_untrusted_host_and_non_lan_admin_are_rejected(
     public_client: TestClient,
 ) -> None:
     assert public_client.get("/admin").status_code == 404
+    assert (
+        public_client.get(
+            "/admin",
+            headers={
+                "x-forwarded-for": "192.168.178.25",
+                "x-forwarded-host": "door.local",
+                "x-forwarded-proto": "http",
+            },
+        ).status_code
+        == 404
+    )
     assert public_client.get("/door", headers={"host": "evil.example"}).status_code == 400
 
     with TestClient(
         app,
         base_url="http://door.local",
-        client=("100.64.0.12", 50000),
-    ) as tailscale_client:
-        assert tailscale_client.get("/admin").status_code == 404
+        client=("203.0.113.12", 50000),
+    ) as tunnel_client:
+        assert tunnel_client.get("/admin").status_code == 404
 
 
 def test_admin_creates_only_one_invitation_and_serves_qr(
@@ -207,7 +218,7 @@ def test_registration_claim_blocks_a_second_browser(
 
     with TestClient(
         app,
-        base_url="https://door.example.ts.net",
+        base_url="https://door.example.com",
         client=("127.0.0.1", 50001),
     ) as second_client:
         second_client.get("/new_user", params={"key": token})
